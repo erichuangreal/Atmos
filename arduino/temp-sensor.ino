@@ -1,7 +1,7 @@
 #include <TinyDHT.h>
 
-#define SAMPLING_RATE 1 // Define the sampling rate (in sec)
-#define NUM_SAMPLES 5 // Define the number of samples taken for smoothing
+const int SAMPLING_RATE = 1; // Define the sampling rate (in sec)
+const int NUM_SAMPLES = 5; // Define the number of samples taken for smoothing
 
 #define DHTPIN 2
 #define DHTTYPE DHT11
@@ -20,8 +20,7 @@ float getSmoothedAvg(float newSample, float samples[], int size) {
   for (int i = 0; i < size; i++) {
     sum += samples[i];
   }
-  float average = sum / size;
-  return average;
+  return sum / size;
 }
 
 void setup() {
@@ -41,17 +40,21 @@ void loop() {
     if (count < NUM_SAMPLES) {
       tempSamples[count] = rawTemp;
       humSamples[count] = rawHum;
+      avgTemp = rawTemp;
+      avgHum = rawHum;
       count++;
     } else {
+      index = (index + 1) % NUM_SAMPLES;
       avgTemp = getSmoothedAvg(rawTemp, tempSamples, NUM_SAMPLES);
       avgHum = getSmoothedAvg(rawHum, humSamples, NUM_SAMPLES);
     }
+    
 
     // Print averaged temp and hum to terminal
-    String text = "Temperature: " + String(avgTemp, 2) + "°C   " +
-    "Humidity: " + String(avgHum, 2) + "%";
+    String text = String(avgTemp, 2) + "," + String(avgHum, 2);
     Serial.println(text);
+  } else {
+    Serial.println(",,ERROR");
   }
-  index = (index + 1) % NUM_SAMPLES;
   delay(SAMPLING_RATE*1000);
 }
