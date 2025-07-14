@@ -9,14 +9,20 @@ from matplotlib.ticker import AutoMinorLocator, MaxNLocator
 import time
 import glob
 from streamlit_autorefresh import st_autorefresh
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from components.download_csv import download_button
 from components.strip_labels import label
 
 # Refresh
 st_autorefresh(interval=5000, limit=None, key="auto-refresh")
 
 st.title("Temperature and Humidity Logger")
+
+# Download button
+def download_button(selected_csv_path: str):
+    with open(selected_csv_path, "rb") as f:
+        st.download_button("Download CSV", f, "log.csv", "text/csv")
 
 # Global state to store the process
 if "proc" not in st.session_state:
@@ -69,7 +75,7 @@ else:
         df = pd.read_csv(selected_csv)
         try:
             # Timestamp
-            df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+            df["Timestamp"] = pd.to_datetime(df["Timestamp"], format="%Y-%m-%d %H:%M:%S")
             if not df.empty:
                 st.subheader("Sensor Data")
                 fig, ax = plt.subplots()

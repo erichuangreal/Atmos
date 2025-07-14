@@ -1,7 +1,10 @@
 import serial
 import pandas as pd
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
+import signal
+import sys
 
 STOP_FILE = "/tmp/stop_dht_logger.flag"
 
@@ -15,8 +18,8 @@ data = []
 LOG_DIR = '/home/eric/temp-logger/csv_files'
 
 # Generate unique timestamped filename
-timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-CSV_FILE = f'{LOG_DIR}/log_{timestamp}.csv'
+file_timestamp = datetime.now(ZoneInfo("America/Toronto")).strftime("%Y-%m-%d_%H-%M-%S")
+CSV_FILE = f'{LOG_DIR}/log_{file_timestamp}.csv'
 
 # Starts reading input
 print("Listening to serial... Press Ctrl+C to stop.")
@@ -30,7 +33,18 @@ if os.path.exists(STOP_FILE):
     os.remove(STOP_FILE)
 
 ser = None
-         
+
+# DELETE WHEN FINISHED (TEMP) - handles closed serial on a clean exit
+def handle_exit(sig, frame):
+    print("\nInterrupted. Cleaning up...")
+    if ser and ser.is_open:
+        ser.close()
+        print("Serial closed.")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, handle_exit)
+signal.signal(signal.SIGTERM, handle_exit)
+
 if __name__ == "__main__":    
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
@@ -40,12 +54,13 @@ if __name__ == "__main__":
                 continue
 
             parts = line.split(',')
-
+            
             if len(parts) == 2:
+                now = datetime.now(ZoneInfo("America/Toronto"))
                 temp = parts[0].strip()
                 hum = parts[1].strip()
-                timestamp = datetime.now().isoformat()
-                short_timestamp = datetime.now().strftime("%H:%M:%S")
+                timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+                short_timestamp = now.strftime("%H:%M:%S")
 
                 # Handle missing/error values
                 if temp == "" or hum == "" or "ERROR" in hum:
