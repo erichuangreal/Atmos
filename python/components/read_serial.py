@@ -60,10 +60,9 @@ if __name__ == "__main__":
         print(f"Could not open serial port {SERIAL_PORT}: {e}")
     finally:
         print("\nSaving CSV and exiting...")
-        df = pd.DataFrame(data, columns=["timestamp", "short_timestamp", "temperature", "humidity"])
+        df = pd.DataFrame(data, columns=["Timestamp", "Shortened Timestamp", "Temperature", "Humidity"])
         df.to_csv(CSV_FILE, index=False)
         print(f"Data saved to {CSV_FILE}")
-        ser.close()
         if os.path.exists(STOP_FILE):
             os.remove(STOP_FILE)
         if ser and ser.is_open:

@@ -4,6 +4,8 @@ import os
 import signal
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import AutoMinorLocator, MaxNLocator
 import time
 import glob
 from streamlit_autorefresh import st_autorefresh
@@ -59,22 +61,32 @@ if not os.path.exists(LOG_DIR):
 else:
     # Search for log CSV files
     csv_files = sorted(glob.glob(os.path.join(LOG_DIR, "log_*.csv")), reverse=True)
-    st.write("Found CSVs:", csv_files)
-    
     if csv_files:
-        latest_csv = csv_files[0]
+        selected_csv = st.selectbox("Choose CSV to view:", csv_files)
+        df = pd.read_csv(selected_csv)
         try:
-            df = pd.read_csv(latest_csv)
+            # Timestamp
+            df["Timestamp"] = pd.to_datetime(df["Timestamp"])
             if not df.empty:
                 st.subheader("Sensor Data")
                 fig, ax = plt.subplots()
-                ax.plot(df["short_timestamp"], df["temperature"], label="Temp (°C)")
-                ax.plot(df["short_timestamp"], df["humidity"], label="Humidity (%)")
+                ax.plot(df["Timestamp"], df["Temperature"], label="Temp (°C)")
+                ax.plot(df["Timestamp"], df["Humidity"], label="Humidity (%)")
+                # Format axis with fewer ticks
+                ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+                fig.autofmt_xdate()
+                ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+                # Minor ticks
+                ax.xaxis.set_minor_locator(mdates.AutoDateLocator())
+                ax.tick_params(axis='x', which='minor', length=4, color='gray')
+                ax.yaxis.set_minor_locator(AutoMinorLocator())
+                ax.tick_params(axis='y', which='minor', length=4, color='gray')
                 ax.legend()
                 ax.set_xlabel("Time")
                 st.pyplot(fig)
-                
-                download_button(latest_csv)
+                st.caption(f"Last updated: {df['Timestamp'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S')}")
+                download_button(selected_csv)
             else:
                 st.info("CSV exists but no data yet.")
         except Exception as e:
