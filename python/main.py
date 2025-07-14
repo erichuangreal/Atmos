@@ -11,6 +11,7 @@ import glob
 from streamlit_autorefresh import st_autorefresh
 
 from components.download_csv import download_button
+from components.strip_labels import label
 
 # Refresh
 st_autorefresh(interval=5000, limit=None, key="auto-refresh")
@@ -62,7 +63,9 @@ else:
     # Search for log CSV files
     csv_files = sorted(glob.glob(os.path.join(LOG_DIR, "log_*.csv")), reverse=True)
     if csv_files:
-        selected_csv = st.selectbox("Choose CSV to view:", csv_files)
+        csv_labels, label_to_file = label(csv_files)
+        selected_label = st.selectbox("Choose CSV to view:", csv_labels)
+        selected_csv = label_to_file[selected_label]
         df = pd.read_csv(selected_csv)
         try:
             # Timestamp
