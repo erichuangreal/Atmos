@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo
 import os
 import signal
 import sys
+from serial import SerialException
+import time
 
 STOP_FILE = "/tmp/stop_dht_logger.flag"
 
@@ -40,10 +42,23 @@ def handle_exit(sig, frame):
     if ser and ser.is_open:
         ser.close()
         print("Serial closed.")
+    if os.path.exists(LOCK_FILE):
+        os.remove(LOCK_FILE)
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_exit)
 signal.signal(signal.SIGTERM, handle_exit)
+
+LOCK_FILE = "/tmp/read_serial.lock"
+
+# Check if another instance is running
+if os.path.exists(LOCK_FILE):
+    print("Another instance is already running.")
+    sys.exit(1)
+
+# Register this process
+with open(LOCK_FILE, "w") as f:
+    f.write(str(os.getpid()))
 
 if __name__ == "__main__":    
     try:
@@ -75,6 +90,7 @@ if __name__ == "__main__":
         print(f"Could not open serial port {SERIAL_PORT}: {e}")
     finally:
         print("\nSaving CSV and exiting...")
+        time.sleep(0.5)
         df = pd.DataFrame(data, columns=["Timestamp", "Shortened Timestamp", "Temperature", "Humidity"])
         df.to_csv(CSV_FILE, index=False)
         print(f"Data saved to {CSV_FILE}")
@@ -82,3 +98,5 @@ if __name__ == "__main__":
             os.remove(STOP_FILE)
         if ser and ser.is_open:
             ser.close()
+        if os.path.exists(LOCK_FILE):
+            os.remove(LOCK_FILE)

@@ -11,6 +11,7 @@ import glob
 from streamlit_autorefresh import st_autorefresh
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from serial import SerialException
 
 from components.strip_labels import label
 
